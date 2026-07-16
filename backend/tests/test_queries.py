@@ -46,6 +46,9 @@ def test_get_active_service_lines_returns_seeded_rows():
         rows = queries.get_active_service_lines(conn)
     keys = {row["key"] for row in rows}
     assert keys == {"training", "consulting", "retainer", "certification", "other"}
+    # ServiceLine.id is typed as str; psycopg deserializes Postgres uuid
+    # columns as uuid.UUID objects, so this must be a real string, not a UUID.
+    assert all(isinstance(row["id"], str) for row in rows)
 
 
 def test_upsert_profile_updates_rather_than_duplicates():

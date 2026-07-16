@@ -11,8 +11,12 @@ _client: genai.Client | None = None
 
 EMBEDDING_MODEL = "gemini-embedding-001"
 EMBEDDING_DIMENSIONS = 1536
-FLASH_MODEL = "gemini-2.5-flash"
-FLASH_LITE_MODEL = "gemini-2.5-flash-lite"
+# gemini-2.5-flash/-flash-lite are no longer available to new API keys, and
+# gemini-flash-latest (the current full-tier model) returned repeated 503s
+# ("experiencing high demand") when verified live. gemini-flash-lite-latest
+# was confirmed reliably available, so it's used for every text call.
+FLASH_MODEL = "gemini-flash-lite-latest"
+FLASH_LITE_MODEL = "gemini-flash-lite-latest"
 
 
 def get_client() -> genai.Client:

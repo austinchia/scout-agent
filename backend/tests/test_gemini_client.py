@@ -30,7 +30,7 @@ def test_evaluate_sufficiency_true_on_yes():
     results = [[SearchResult(title="t", url="u", snippet="s")]]
     assert evaluate_sufficiency(results, client=fake_client) is True
     _, kwargs = fake_client.models.generate_content.call_args
-    assert kwargs["model"] == "gemini-2.5-flash-lite"
+    assert kwargs["model"] == "gemini-flash-lite-latest"
 
 
 def test_evaluate_sufficiency_false_on_no():
@@ -47,7 +47,7 @@ def test_classify_returns_parsed_classification():
     result = classify([[SearchResult(title="t", url="u", snippet="s")]], service_lines, client=fake_client)
     assert result == expected
     _, kwargs = fake_client.models.generate_content.call_args
-    assert kwargs["model"] == "gemini-2.5-flash"
+    assert kwargs["model"] == "gemini-flash-lite-latest"
     assert kwargs["config"].response_schema is Classification
 
 

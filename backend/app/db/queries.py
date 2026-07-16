@@ -15,7 +15,10 @@ def get_active_service_lines(conn: psycopg.Connection) -> list[dict[str, Any]]:
             "SELECT id, key, label, description FROM service_lines WHERE active = TRUE ORDER BY key"
         )
         columns = [desc[0] for desc in cur.description]
-        return [dict(zip(columns, row)) for row in cur.fetchall()]
+        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+        for row in rows:
+            row["id"] = str(row["id"])
+        return rows
 
 
 def vector_search(

@@ -54,7 +54,8 @@ def evaluate_sufficiency(search_results: list[list[SearchResult]], client: genai
             ),
         ),
     )
-    return response.text.strip().lower().startswith("yes")
+    answer = (response.text or "").strip().lower()
+    return answer.startswith("yes")
 
 
 def classify(
@@ -66,7 +67,7 @@ def classify(
     lines_description = "\n".join(f"- {sl.key}: {sl.description}" for sl in service_lines)
     response = client.models.generate_content(
         model=FLASH_MODEL,
-        contents=_flatten(search_results),
+        contents=_flatten(search_results) or "(no results yet)",
         config=types.GenerateContentConfig(
             system_instruction=(
                 "Classify the company described by the research notes into exactly "
@@ -77,6 +78,11 @@ def classify(
             response_schema=Classification,
         ),
     )
+    if response.parsed is None:
+        raise ValueError(
+            "Gemini returned no parsed classification (response may have been "
+            "safety-blocked or malformed)"
+        )
     return response.parsed
 
 
@@ -106,7 +112,8 @@ def synthesize_brief(
             ),
         ),
     )
-    brief, _, rationale = response.text.partition("---")
+    text = response.text or ""
+    brief, _, rationale = text.partition("---")
     return brief.strip(), rationale.strip()
 
 
@@ -133,5 +140,9 @@ def generate_talking_points(
             ),
         ),
     )
-    lines = [line.strip("-* ").strip() for line in response.text.splitlines()]
-    return [line for line in lines if line]
+    text = response.text or ""
+    lines = [line.strip("-* ").strip() for line in text.splitlines()]
+    points = [line for line in lines if line]
+    if not points:
+        return ["Ask about their current priorities and what's driving this conversation now."]
+    return points

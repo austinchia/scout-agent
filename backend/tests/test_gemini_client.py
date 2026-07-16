@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
 
+import pytest
+
 from app.agent.gemini_client import (
     classify,
     embed_text,
@@ -66,3 +68,53 @@ def test_generate_talking_points_parses_lines():
     classification = Classification(service_line="training", confidence=0.9, rationale="x")
     points = generate_talking_points("brief text", classification, [], client=fake_client)
     assert points == ["What tools do you use?", "Who owns reporting?"]
+
+
+def test_classify_with_empty_search_results_sends_placeholder_contents():
+    fake_client = MagicMock()
+    expected = Classification(service_line="training", confidence=0.9, rationale="Power BI fit")
+    fake_client.models.generate_content.return_value = MagicMock(parsed=expected)
+    service_lines = [ServiceLine(id="1", key="training", label="Training", description="BI training")]
+    result = classify([], service_lines, client=fake_client)
+    assert result == expected
+    _, kwargs = fake_client.models.generate_content.call_args
+    assert kwargs["contents"] == "(no results yet)"
+
+
+def test_evaluate_sufficiency_returns_false_on_none_text():
+    fake_client = MagicMock()
+    fake_client.models.generate_content.return_value = MagicMock(text=None)
+    assert evaluate_sufficiency([], client=fake_client) is False
+
+
+def test_classify_raises_value_error_on_none_parsed():
+    fake_client = MagicMock()
+    fake_client.models.generate_content.return_value = MagicMock(parsed=None)
+    service_lines = [ServiceLine(id="1", key="training", label="Training", description="BI training")]
+    with pytest.raises(ValueError):
+        classify([[SearchResult(title="t", url="u", snippet="s")]], service_lines, client=fake_client)
+
+
+def test_synthesize_brief_handles_none_text():
+    fake_client = MagicMock()
+    fake_client.models.generate_content.return_value = MagicMock(text=None)
+    classification = Classification(service_line="training", confidence=0.9, rationale="x")
+    brief, rationale = synthesize_brief([], classification, [], client=fake_client)
+    assert brief == ""
+    assert rationale == ""
+
+
+def test_generate_talking_points_handles_none_text():
+    fake_client = MagicMock()
+    fake_client.models.generate_content.return_value = MagicMock(text=None)
+    classification = Classification(service_line="training", confidence=0.9, rationale="x")
+    points = generate_talking_points("brief text", classification, [], client=fake_client)
+    assert points == ["Ask about their current priorities and what's driving this conversation now."]
+
+
+def test_generate_talking_points_falls_back_when_no_usable_lines():
+    fake_client = MagicMock()
+    fake_client.models.generate_content.return_value = MagicMock(text="   \n  -  \n")
+    classification = Classification(service_line="training", confidence=0.9, rationale="x")
+    points = generate_talking_points("brief text", classification, [], client=fake_client)
+    assert points == ["Ask about their current priorities and what's driving this conversation now."]

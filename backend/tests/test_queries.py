@@ -1,4 +1,5 @@
 import os
+import random
 
 import pytest
 
@@ -8,10 +9,36 @@ from app.db import queries
 
 pytestmark = pytest.mark.skipif(not os.environ.get("DATABASE_URL"), reason="requires a live DATABASE_URL")
 
+_TEST_COMPANY_NAMES = [
+    "Test Upsert Co",
+    "Close Match Co",
+    "Far Match Co",
+    "Scout Run Link Co",
+]
+
 
 @pytest.fixture(autouse=True, scope="module")
 def _migrated():
     run_migrations()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            names = [name.lower() for name in _TEST_COMPANY_NAMES]
+            cur.execute(
+                "DELETE FROM scout_runs WHERE profile_id IN "
+                "(SELECT id FROM profiles WHERE lower(company_name) = ANY(%s))",
+                (names,),
+            )
+            cur.execute("DELETE FROM profiles WHERE lower(company_name) = ANY(%s)", (names,))
+    yield
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            names = [name.lower() for name in _TEST_COMPANY_NAMES]
+            cur.execute(
+                "DELETE FROM scout_runs WHERE profile_id IN "
+                "(SELECT id FROM profiles WHERE lower(company_name) = ANY(%s))",
+                (names,),
+            )
+            cur.execute("DELETE FROM profiles WHERE lower(company_name) = ANY(%s)", (names,))
 
 
 def test_get_active_service_lines_returns_seeded_rows():
@@ -52,9 +79,14 @@ def test_upsert_profile_updates_rather_than_duplicates():
 
 
 def test_vector_search_orders_by_similarity():
-    close_embedding = [0.2] * 1536
-    far_embedding = [-0.2] * 1536
-    query_embedding = [0.2] * 1536
+    # Cosine distance (pgvector's `<=>`) only measures direction, not magnitude,
+    # so uniform-constant vectors like [0.2]*1536 and [0.05]*1536 are perfectly
+    # collinear (distance 0) regardless of scale. A seeded random vector avoids
+    # ties against any other row's embedding, uniform or otherwise.
+    rng = random.Random(1234)
+    query_embedding = [rng.uniform(-1, 1) for _ in range(1536)]
+    close_embedding = [v + 0.001 for v in query_embedding]
+    far_embedding = [-v for v in query_embedding]
 
     with get_connection() as conn:
         queries.upsert_profile(

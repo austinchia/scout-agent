@@ -24,8 +24,8 @@ backend/
     main.py               # FastAPI app, mounts routes
     api/routes.py         # POST /scout/run
     agent/loop.py          # run_scout() per PRD section 6 pseudocode
-    agent/search.py        # web_search wrapper
-    agent/openai_client.py # sufficiency/classify/synthesize/questions calls
+    agent/search.py        # web_search wrapper (Tavily)
+    agent/gemini_client.py # sufficiency/classify/synthesize/questions calls (Gemini)
     models/                # Pydantic: Classification, ScoutProfile, ServiceLine, etc.
     db/
       connection.py        # pooled Neon connection (PgBouncer-aware)
@@ -77,3 +77,17 @@ Uses Neon's pooled connection string (the `-pooler` host, PgBouncer in transacti
 6. Minimal frontend (React + Vite + Tailwind)
 
 Check in with the user after each step before proceeding to the next. No package outside the PRD's tech stack (section 8) gets installed without asking first.
+
+## Addendum (2026-07-16): model provider changed from OpenAI to Gemini + Tavily
+
+Before Phase 4 (agent loop) was built, Austin asked to avoid OpenAI API costs. The PRD's section 8 named OpenAI specifically, so this is a deliberate deviation from the PRD, not an assumption — recorded here per the same "ask before deviating from the tech stack" rule that governs dependency choices.
+
+**Decision:** use Google's Gemini API (free tier) for all model calls, and Tavily (free tier) for web search, instead of OpenAI. A fully local/offline model (e.g. Ollama) was considered and rejected: Vercel's serverless functions cannot reach a model running on Austin's own machine, which would break the PRD's deployed, on-demand usage model (section 6) the moment this ships past local development.
+
+**What changes from the original plan:**
+- `agent/search.py` calls the Tavily API (`tavily-python`) instead of OpenAI's Responses API hosted `web_search` tool. Tavily returns results as `{title, url, content}` directly, which is a simpler, more robust mapping to `SearchResult` than parsing OpenAI's citation-annotation format.
+- `agent/openai_client.py` becomes `agent/gemini_client.py`, calling Google's `google-genai` SDK. Structured classification uses Gemini's `response_schema` + `response.parsed`, the same shape as OpenAI's `.parse()`.
+- Models: `gemini-2.5-flash-lite` for the sufficiency check (cheapest/fastest, matches the PRD's original intent of a lighter model for that step), `gemini-2.5-flash` for classification/synthesis/talking points, `gemini-embedding-001` for embeddings.
+- **No change to the already-built database schema:** Gemini's embedding model supports configurable output dimensionality (768/1536/3072 via Matryoshka Representation Learning). Setting `output_dimensionality=1536` keeps embeddings compatible with the `VECTOR(1536)` columns Task 4 already migrated — no schema rework needed.
+- New env vars: `GEMINI_API_KEY`, `TAVILY_API_KEY` (replacing `OPENAI_API_KEY`). New dependencies: `google-genai`, `tavily-python` (replacing `openai`, which Task 1 had added and is now removed).
+- Cost profile: both providers' free tiers are rate-limited (requests per minute/day), not unlimited — acceptable for Scout's low-frequency, on-demand usage pattern (PRD section 8's own reasoning for choosing Neon's scale-to-zero pricing applies here too).

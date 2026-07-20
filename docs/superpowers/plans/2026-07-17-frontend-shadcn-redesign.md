@@ -258,18 +258,25 @@ export default function App() {
             </form>
           </CardContent>
         </Card>
+
+        {error && <p className="mt-6 text-sm text-red-400">{error}</p>}
+        {profile && (
+          <pre className="mt-6 whitespace-pre-wrap text-xs text-muted-foreground">
+            {JSON.stringify(profile, null, 2)}
+          </pre>
+        )}
       </main>
     </div>
   )
 }
 ```
 
-Note: this intentionally drops the old error/results JSX for now — Task 4 adds it back using shadcn components.
+Note: the plain `<p>`/`<pre>` block is a deliberate temporary placeholder, not final styling — it exists only so `error` and `profile` are read somewhere and the project's `noUnusedLocals` TypeScript setting doesn't fail the build. Task 4 replaces this placeholder outright with the styled Alert/Tabs version (see Task 4 Step 2) — it intentionally drops the old error/results JSX styling for now.
 
 - [ ] **Step 2: Verify build and lint pass**
 
 Run: `pnpm run build && pnpm lint` (from `frontend/`)
-Expected: PASS — no TypeScript errors, no lint errors. (`error`/`profile` state is still declared and used in `handleSubmit`, so no unused-variable errors.)
+Expected: PASS — no TypeScript errors, no lint errors. `error` and `profile` are now read in the placeholder block above, so `noUnusedLocals` doesn't fire.
 
 - [ ] **Step 3: Manual visual check**
 
@@ -311,6 +318,13 @@ In `frontend/src/App.tsx`, replace:
 ```tsx
           </CardContent>
         </Card>
+
+        {error && <p className="mt-6 text-sm text-red-400">{error}</p>}
+        {profile && (
+          <pre className="mt-6 whitespace-pre-wrap text-xs text-muted-foreground">
+            {JSON.stringify(profile, null, 2)}
+          </pre>
+        )}
       </main>
     </div>
   )

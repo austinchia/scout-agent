@@ -10,6 +10,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type Classification = {
   service_line: string
@@ -111,11 +115,68 @@ export default function App() {
           </CardContent>
         </Card>
 
-        {error && <p className="mt-6 text-sm text-red-400">{error}</p>}
-        {profile && (
-          <pre className="mt-6 whitespace-pre-wrap text-xs text-muted-foreground">
-            {JSON.stringify(profile, null, 2)}
-          </pre>
+        {error && (
+          <Alert variant="destructive" className="mt-6">
+            <AlertTitle>Something went wrong</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {loading && (
+          <Card className="mt-6">
+            <CardHeader>
+              <Skeleton className="h-5 w-40" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </CardContent>
+          </Card>
+        )}
+
+        {profile && !loading && (
+          <Card className="mt-6">
+            <CardContent className="pt-6">
+              {profile.low_confidence && (
+                <Alert className="mb-4 border-amber-500/50 text-amber-400 [&>svg]:text-amber-400">
+                  <AlertTitle>Low confidence</AlertTitle>
+                  <AlertDescription>
+                    Limited public information was found for this company. Treat this brief as a
+                    starting point, not a finished picture.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Tabs defaultValue="overview">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="rationale">Rationale</TabsTrigger>
+                  <TabsTrigger value="talking-points">Talking Points</TabsTrigger>
+                </TabsList>
+                <TabsContent value="overview" className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Badge>{profile.classification.service_line}</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {Math.round(profile.classification.confidence * 100)}% confidence
+                    </span>
+                  </div>
+                  <p className="whitespace-pre-line text-sm text-foreground">{profile.brief}</p>
+                </TabsContent>
+                <TabsContent value="rationale">
+                  <p className="whitespace-pre-line text-sm text-foreground">{profile.rationale}</p>
+                </TabsContent>
+                <TabsContent value="talking-points">
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-foreground">
+                    {profile.talking_points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         )}
       </main>
     </div>

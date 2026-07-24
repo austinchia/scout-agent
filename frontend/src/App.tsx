@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { downloadScoutReportPdf } from './lib/exportReport'
 
 export type Classification = {
   service_line: string
@@ -99,6 +100,15 @@ export default function App() {
 
         {profile && (
           <div className="mt-8 space-y-6">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => downloadScoutReportPdf(profile, companyName)}
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Download PDF
+              </button>
+            </div>
             {profile.low_confidence && (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Low confidence: limited public information was found for this company. Treat this

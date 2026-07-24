@@ -15,13 +15,13 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 
-type Classification = {
+export type Classification = {
   service_line: string
   confidence: number
   rationale: string
 }
 
-type ScoutProfile = {
+export type ScoutProfile = {
   id: string | null
   company_name: string
   note: string | null

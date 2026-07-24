@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
+import { downloadScoutReportPdf } from './lib/exportReport'
 
 export type Classification = {
   service_line: string
@@ -139,6 +140,16 @@ export default function App() {
         {profile && !loading && (
           <Card className="mt-6">
             <CardContent className="pt-6">
+              <div className="mb-4 flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadScoutReportPdf(profile, companyName)}
+                >
+                  Download PDF
+                </Button>
+              </div>
               {profile.low_confidence && (
                 <Alert className="mb-4 border-amber-500/50 text-amber-400 [&>svg]:text-amber-400">
                   <AlertTitle>Low confidence</AlertTitle>

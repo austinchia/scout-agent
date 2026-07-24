@@ -1,12 +1,12 @@
 import { useState } from 'react'
 
-type Classification = {
+export type Classification = {
   service_line: string
   confidence: number
   rationale: string
 }
 
-type ScoutProfile = {
+export type ScoutProfile = {
   id: string | null
   company_name: string
   note: string | null
@@ -67,7 +67,7 @@ export default function App() {
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none"
-              placeholder="Groupe Clarins"
+              placeholder="Enter a company name"
             />
           </div>
           <div>
